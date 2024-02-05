@@ -41,32 +41,6 @@ impl Default for Cell {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-/// A struct to represent a buffered change in a cell in the grid
-pub struct CellChange {
-    x: usize,
-    y: usize,
-    cell: Option<Cell>,
-}
-
-impl CellChange {
-    pub fn new(x: usize, y: usize, cell: Option<Cell>) -> Self {
-        Self { x, y, cell }
-    }
-
-    pub fn x(&self) -> usize {
-        self.x
-    }
-
-    pub fn y(&self) -> usize {
-        self.y
-    }
-
-    pub fn cell(&self) -> Option<Cell> {
-        self.cell.clone()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crossterm::style::Color;

@@ -5,7 +5,19 @@ use crossterm::{
     style::{Color, Print, SetBackgroundColor},
 };
 
-use crate::cell::{Cell, CellChange};
+use crate::cell::Cell;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Point {
+    x: usize,
+    y: usize,
+}
+
+impl Point {
+    pub fn new(x: usize, y: usize) -> Self {
+        Self { x, y }
+    }
+}
 
 pub type GridResult = Result<(), &'static str>;
 
@@ -14,7 +26,7 @@ pub struct Grid {
     /// A 2D grid of cells that will be drawn to the terminal
     grid: Vec<Vec<Option<Cell>>>,
     /// The buffered changes to the grid
-    changes: Vec<CellChange>,
+    changes: Vec<Point>,
     /// The width of the grid
     width: usize,
     /// The height of the grid
@@ -67,7 +79,8 @@ impl Grid {
             return Err("Cell outside of range");
         }
 
-        self.changes.push(CellChange::new(x, y, cell));
+        self.grid[y][x] = cell.clone();
+        self.changes.push(Point::new(x, y));
 
         Ok(())
     }
@@ -101,13 +114,11 @@ impl Grid {
     /// Draws only the changes to the grid
     fn draw_changes(&mut self, stdout: &mut Stdout) -> io::Result<()> {
         for change in &self.changes {
-            let x = change.x();
-            let y = change.y();
+            let x = change.x;
+            let y = change.y;
 
             let x_u16 = x.try_into().expect("This should never fail");
             let y_u16 = y.try_into().expect("This should never fail");
-
-            self.grid[y][x] = change.cell();
 
             match &self.grid[y][x] {
                 Some(cell) => draw_cell(stdout, x_u16, y_u16, cell)?,
@@ -197,7 +208,7 @@ fn erase_cell(stdout: &mut Stdout, x: u16, y: u16) -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Cell, cell::CellChange};
+    use crate::Cell;
 
     use super::Grid;
 
@@ -224,19 +235,23 @@ mod tests {
 
         grid.set_cell(1, 2, Some(Cell::default())).unwrap();
 
-        let expected = vec![CellChange::new(1,2, Some(Cell::default()))];
+        let expected = vec![
+            vec![None, None, None],
+            vec![None, None, None],
+            vec![None, Some(Cell::default()), None],
+        ];
 
-        assert_eq!(grid.changes, expected);
+        assert_eq!(grid.grid, expected);
     }
 
     #[test]
     fn grid_get_cell_works() {
         let mut grid = Grid::new(3, 3);
 
-        grid.set_cell(2, 2, Some(Cell::default())).unwrap();
+        grid.set_cell(1, 2, Some(Cell::default())).unwrap();
 
         assert_eq!(
-            grid.get_cell(2, 2).expect("Failed to unwrap get_cell"),
+            grid.get_cell(1, 2).expect("Failed to unwrap get_cell"),
             Cell::default()
         )
     }

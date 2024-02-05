@@ -1,4 +1,4 @@
-use std::{io::{self, stdout, Stdout, Write}, convert};
+use std::io::{self, stdout, Stdout, Write};
 
 use crossterm::{
     cursor, execute,
@@ -96,7 +96,7 @@ impl Grid {
                 let y_u16 = y.try_into().expect("This should never fail");
 
                 match &self.grid[y][x] {
-                    Some(cell) => draw_cell(&mut stdout, x_u16, y_u16, &cell)?,
+                    Some(cell) => draw_cell(&mut stdout, x_u16, y_u16, cell)?,
                     None => erase_cell(&mut stdout, x_u16, y_u16)?,
                 }
             }
@@ -135,7 +135,7 @@ fn draw_cell(stdout: &mut Stdout, x: u16, y: u16, cell: &Cell) -> io::Result<()>
         stdout,
         cursor::MoveTo(x * 2, y),
         SetBackgroundColor(cell.color()),
-        Print(format!("{}", cell.value())),
+        Print(cell.value()),
         SetBackgroundColor(Color::Reset),
     )?;
 
@@ -161,7 +161,6 @@ fn erase_cell(stdout: &mut Stdout, x: u16, y: u16) -> io::Result<()> {
 
     stdout.flush()
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -208,7 +207,10 @@ mod tests {
 
         grid.set_cell(2, 2, Cell::default()).unwrap();
 
-        assert_eq!(grid.get_cell(2, 2).expect("Failed to unwrap get_cell"), Cell::default())
+        assert_eq!(
+            grid.get_cell(2, 2).expect("Failed to unwrap get_cell"),
+            Cell::default()
+        )
     }
 
     #[test]

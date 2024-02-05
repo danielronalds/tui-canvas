@@ -5,7 +5,7 @@ use crossterm::{
     style::{Color, Print, SetBackgroundColor},
 };
 
-use crate::cell::Cell;
+use crate::cell::{Cell, CellChange};
 
 pub type GridResult = Result<(), &'static str>;
 
@@ -13,6 +13,8 @@ pub type GridResult = Result<(), &'static str>;
 pub struct Grid {
     /// A 2D grid of cells that will be drawn to the terminal
     grid: Vec<Vec<Option<Cell>>>,
+    /// The buffered changes to the grid
+    changes: Vec<CellChange>,
     /// The width of the grid
     width: usize,
     /// The height of the grid
@@ -33,6 +35,7 @@ impl Grid {
 
         Grid {
             grid,
+            changes: vec![],
             width,
             height,
         }
@@ -64,10 +67,7 @@ impl Grid {
             return Err("Cell outside of range");
         }
 
-        match cell {
-            Some(cell) => self.grid[y][x] = Some(cell),
-            None => self.grid[y][x] = None,
-        }
+        self.changes.push(CellChange::new(x, y, cell));
 
         Ok(())
     }
@@ -88,17 +88,49 @@ impl Grid {
     }
 
     /// Draws the grid to the terminal
-    pub fn draw(&self) -> io::Result<()> {
+    pub fn draw(&mut self) -> io::Result<()> {
         let mut stdout = stdout();
 
+        if self.changes.is_empty() {
+            return self.draw_all(&mut stdout);
+        }
+
+        self.draw_changes(&mut stdout)
+    }
+
+    /// Draws only the changes to the grid
+    fn draw_changes(&mut self, stdout: &mut Stdout) -> io::Result<()> {
+        for change in &self.changes {
+            let x = change.x();
+            let y = change.y();
+
+            let x_u16 = x.try_into().expect("This should never fail");
+            let y_u16 = y.try_into().expect("This should never fail");
+
+            self.grid[y][x] = change.cell();
+
+            match &self.grid[y][x] {
+                Some(cell) => draw_cell(stdout, x_u16, y_u16, cell)?,
+                None => erase_cell(stdout, x_u16, y_u16)?,
+            }
+        }
+
+        self.changes = vec![];
+
+        Ok(())
+    }
+
+    /// Draws the whole grid to the terminal, which is used when there have been no changes made
+    /// yet
+    fn draw_all(&self, stdout: &mut Stdout) -> io::Result<()> {
         for y in 0..self.height {
             for x in 0..self.width {
                 let x_u16 = x.try_into().expect("This should never fail");
                 let y_u16 = y.try_into().expect("This should never fail");
 
                 match &self.grid[y][x] {
-                    Some(cell) => draw_cell(&mut stdout, x_u16, y_u16, cell)?,
-                    None => erase_cell(&mut stdout, x_u16, y_u16)?,
+                    Some(cell) => draw_cell(stdout, x_u16, y_u16, cell)?,
+                    None => erase_cell(stdout, x_u16, y_u16)?,
                 }
             }
         }
@@ -179,6 +211,7 @@ mod tests {
             grid,
             Grid {
                 grid: expected,
+                changes: vec![],
                 width: 3,
                 height: 2
             }

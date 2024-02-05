@@ -1,1 +1,1 @@
-mod mouse;
+pub mod mouse;

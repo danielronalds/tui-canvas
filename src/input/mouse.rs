@@ -1,6 +1,9 @@
 use std::io;
 
-use crossterm::event::{read, Event, MouseButton, MouseEventKind};
+use crossterm::{
+    event::{self, read, Event, MouseButton, MouseEventKind},
+    execute,
+};
 
 use crate::Grid;
 
@@ -17,6 +20,9 @@ use crate::Grid;
 ///
 /// `None` if the click is outside the grid, otherwise a tuple with the format (x, y)
 pub fn get_mouse_click(grid: &Grid, button: MouseButton) -> io::Result<Option<(usize, usize)>> {
+    let mut stdout = io::stdout();
+    execute!(stdout, event::EnableMouseCapture)?;
+
     if let Event::Mouse(event) = read()? {
         if event.kind == MouseEventKind::Down(button) {
             // A cell is 2 columns wide
@@ -25,12 +31,15 @@ pub fn get_mouse_click(grid: &Grid, button: MouseButton) -> io::Result<Option<(u
 
             // Clicks outside of the grid don't count
             if x >= grid.width() && y >= grid.height() {
+                execute!(stdout, event::DisableMouseCapture)?;
                 return Ok(None);
             }
 
+            execute!(stdout, event::DisableMouseCapture)?;
             return Ok(Some((x, y)));
         }
     }
+    execute!(stdout, event::DisableMouseCapture)?;
     Ok(None)
 }
 
@@ -50,6 +59,9 @@ pub fn get_mouse_click_or_drag(
     grid: &Grid,
     button: MouseButton,
 ) -> io::Result<Option<(usize, usize)>> {
+    let mut stdout = io::stdout();
+    execute!(stdout, event::EnableMouseCapture)?;
+
     if let Event::Mouse(event) = read()? {
         if event.kind == MouseEventKind::Down(button) || event.kind == MouseEventKind::Drag(button)
         {
@@ -59,11 +71,14 @@ pub fn get_mouse_click_or_drag(
 
             // Clicks outside of the grid don't count
             if x >= grid.width() && y >= grid.height() {
+                execute!(stdout, event::DisableMouseCapture)?;
                 return Ok(None);
             }
 
+            execute!(stdout, event::DisableMouseCapture)?;
             return Ok(Some((x, y)));
         }
     }
+    execute!(stdout, event::DisableMouseCapture)?;
     Ok(None)
 }

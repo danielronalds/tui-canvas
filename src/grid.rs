@@ -197,7 +197,7 @@ fn erase_cell(stdout: &mut Stdout, x: u16, y: u16) -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::Cell;
+    use crate::{Cell, cell::CellChange};
 
     use super::Grid;
 
@@ -222,17 +222,11 @@ mod tests {
     fn grid_set_cell_works() {
         let mut grid = Grid::new(3, 3);
 
-        let cell = Cell::default();
+        grid.set_cell(1, 2, Some(Cell::default())).unwrap();
 
-        grid.set_cell(1, 2, Some(cell.clone())).unwrap();
+        let expected = vec![CellChange::new(1,2, Some(Cell::default()))];
 
-        let expected = vec![
-            vec![None, None, None],
-            vec![None, None, None],
-            vec![None, Some(cell), None],
-        ];
-
-        assert_eq!(grid.grid, expected);
+        assert_eq!(grid.changes, expected);
     }
 
     #[test]

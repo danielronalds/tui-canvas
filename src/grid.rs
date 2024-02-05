@@ -54,19 +54,20 @@ impl Grid {
     ///
     /// - `x` The column of the cell to toggle, with 0 being the leftmost cell
     /// - `y` The row of the cell to toggle, with 0 being the top of the screen
-    /// - `cell` The [`Cell`] to set the cell to
+    /// - `cell` The [`Cell`] to set the cell to, or `None` to unset the cell
     ///
     /// # Returns
     ///
     /// An [`Err`] if the cell is out of range
-    pub fn set_cell(&mut self, x: usize, y: usize, cell: impl Into<Cell>) -> GridResult {
+    pub fn set_cell(&mut self, x: usize, y: usize, cell: Option<Cell>) -> GridResult {
         if x >= self.width || y >= self.height {
             return Err("Cell outside of range");
         }
 
-        let new_cell = cell.into();
-
-        self.grid[y][x] = Some(new_cell);
+        match cell {
+            Some(cell) => self.grid[y][x] = Some(cell),
+            None => self.grid[y][x] = None,
+        }
 
         Ok(())
     }
@@ -190,7 +191,7 @@ mod tests {
 
         let cell = Cell::default();
 
-        grid.set_cell(1, 2, cell.clone()).unwrap();
+        grid.set_cell(1, 2, Some(cell.clone())).unwrap();
 
         let expected = vec![
             vec![None, None, None],
@@ -205,7 +206,7 @@ mod tests {
     fn grid_get_cell_works() {
         let mut grid = Grid::new(3, 3);
 
-        grid.set_cell(2, 2, Cell::default()).unwrap();
+        grid.set_cell(2, 2, Some(Cell::default())).unwrap();
 
         assert_eq!(
             grid.get_cell(2, 2).expect("Failed to unwrap get_cell"),

@@ -1,4 +1,4 @@
-use std::io::{self, stdout, Stdout, Write};
+use std::{io::{self, stdout, Stdout, Write}, convert};
 
 use crossterm::{
     cursor, execute,
@@ -36,6 +36,16 @@ impl Grid {
             width,
             height,
         }
+    }
+
+    /// Attempts to create a grid the size of the user's terminal window
+    pub fn new_full_screen() -> io::Result<Self> {
+        let (width, height) = crossterm::terminal::size()?;
+
+        let actual_width = (width - 1) as usize;
+        let actual_height = (height - 1) as usize;
+
+        Ok(Self::new(actual_width, actual_height))
     }
 
     /// Sets the given cell to true if the cell is in range
@@ -76,6 +86,7 @@ impl Grid {
         self.grid.get(y)?.clone().get(x)?.clone()
     }
 
+    /// Draws the grid to the terminal
     pub fn draw(&self) -> io::Result<()> {
         let mut stdout = stdout();
 
